@@ -17,9 +17,7 @@ export default class Account {
         // Make a request with cookie
         const response = await fetch("https://labs.google/fx/api/auth/session", {
             method: "GET",
-            headers: {
-                cookie: this.cookie,
-            }
+            headers: { cookie: this.cookie }
         });
 
         if (response.status != 200) {
@@ -27,17 +25,11 @@ export default class Account {
             throw new Error("failed to fetch session info")
         }
 
-        let sessionPayload;
-
-        try {
-            sessionPayload = await response.json() as Session;
-        } catch (err) {
-            console.error(await response.text())
-            throw new Error("failed to parse session payload")
-        }
+        const sessionPayload = await response.json() as Session;
 
         // Check if response is valid and has access_token
         if (sessionPayload && !(sessionPayload.access_token?.trim())) {
+            console.error(sessionPayload);
             throw new Error("session payload is missing access token")
         }
 
