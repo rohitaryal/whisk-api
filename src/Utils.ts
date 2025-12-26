@@ -1,7 +1,7 @@
 import fs from "fs";
-import type { ImageExtensionTypes } from "./Types";
+import type { ImageExtensionTypes } from "./Types.js";
 import path from "path";
-import { ImageExtension } from "./Constants";
+import { ImageExtension } from "./Constants.js";
 
 /**
  * Make a request, thats all

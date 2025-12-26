@@ -1,8 +1,8 @@
-import { ImageGenerationModel } from "./Constants";
-import { Media } from "./Media";
-import type { ImageGenerationModelType, PromptConfig } from "./Types";
-import { request } from "./Utils";
-import { Account } from "./Whisk";
+import { ImageGenerationModel } from "./Constants.js";
+import { Media } from "./Media.js";
+import type { ImageGenerationModelType, PromptConfig } from "./Types.js";
+import { request } from "./Utils.js";
+import { Account } from "./Whisk.js";
 
 export class Project {
     readonly account: Account;

@@ -1,5 +1,5 @@
-import type { Account } from "./Whisk";
-import { ImageAspectRatio, VideoAspectRatio, ImageExtension, ImageGenerationModel, VideoGenerationModel, ImageRefinementModel } from "./Constants";
+import type { Account } from "./Whisk.js";
+import { ImageAspectRatio, VideoAspectRatio, ImageExtension, ImageGenerationModel, VideoGenerationModel, ImageRefinementModel } from "./Constants.js";
 
 export interface MediaConfig {
     seed: number;

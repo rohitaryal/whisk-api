@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import yargs from "yargs";
 import { hideBin } from 'yargs/helpers';
-import { Whisk } from "./Whisk";
-import { imageToBase64 } from "./Utils";
+import { Whisk } from "./Whisk.js";
+import { imageToBase64 } from "./Utils.js";
 import {
     ImageAspectRatio,
     ImageGenerationModel,
     VideoGenerationModel
-} from "./Constants";
+} from "./Constants.js";
 
 const y = yargs(hideBin(process.argv));
 

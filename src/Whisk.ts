@@ -1,6 +1,6 @@
-import { Media } from "./Media";
-import { Project } from "./Project";
-import { request } from "./Utils";
+import { Media } from "./Media.js";
+import { Project } from "./Project.js";
+import { request } from "./Utils.js";
 
 export class Account {
     private cookie: string;

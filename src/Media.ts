@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Whisk, type Account } from "./Whisk";
+import { Whisk, type Account } from "./Whisk.js";
 
 import type {
     VideoAspectRatioType,
@@ -9,9 +9,9 @@ import type {
     VideoGenerationModelType,
     ImageRefinementModelType,
     PromptConfig
-} from "./Types";
-import { request } from "./Utils";
-import { VideoGenerationModel } from "./Constants";
+} from "./Types.js";
+import { request } from "./Utils.js";
+import { VideoGenerationModel } from "./Constants.js";
 import path from "path";
 
 export class Media {
