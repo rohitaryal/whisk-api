@@ -48,7 +48,7 @@ jobs:
         run: bun install
 
       - name: Build
-        run: bun build
+        run: bun run build
 
       - name: Publish to NPM
         run: bun publish -p --access public
