@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      COOKIE: ${{ secrets.GOOGLE_COOKIE }}
+      COOKIE: ${{ secrets.COOKIE }}
 
     steps:
       - name: Checkout
