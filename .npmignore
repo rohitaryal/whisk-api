@@ -1,11 +1,8 @@
+src/
 tests/
-examples/
-.env*
-*.log
-.cache
-.eslintcache
+example/
+bun.lock
+package-lock.json
 tsconfig.json
-tsup.config.ts
 .github/
-.gitignore
-bun.lockb
+assets/

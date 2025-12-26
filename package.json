@@ -9,7 +9,7 @@
     ],
     "private": false,
     "scripts": {
-        "test": "bun test",
+        "test": "bun test --concurrent",
         "build": "tsc && chmod +x ./dist/index.js"
     },
     "devDependencies": {
@@ -24,6 +24,9 @@
         "bun-types": "^1.2.14",
         "undici-types": "^6.21.0",
         "yargs": "^18.0.0"
+    },
+    "bin": {
+        "whisk": "./dist/Cli.js"
     },
     "repository": {
         "type": "git",
