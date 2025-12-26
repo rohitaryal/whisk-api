@@ -1,6 +1,6 @@
 src/
 tests/
-example/
+examples/
 bun.lock
 package-lock.json
 tsconfig.json
