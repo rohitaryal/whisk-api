@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: List content
+        run: ls -al
+
       - name: Run test
         run: bun test --concurrent
 
