@@ -1,16 +1,20 @@
 {
     "name": "@rohitaryal/whisk-api",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "files": [
         "dist"
     ],
+    "exports": {
+        "import": "./dist/index.js",
+        "require": "./dist/index.js"
+    },
     "private": false,
     "scripts": {
         "test": "bun test --concurrent",
-        "build": "tsc && chmod +x ./dist/index.js"
+        "build": "tsc && chmod +x ./dist/Cli.js"
     },
     "devDependencies": {
         "@types/bun": "^1.3.5",
@@ -44,9 +48,5 @@
         "url": "https://github.com/rohitaryal/whisk-api/issues"
     },
     "homepage": "https://github.com/rohitaryal/whisk-api#readme",
-    "directories": {
-        "example": "examples",
-        "test": "tests"
-    },
     "description": "Unofficial API for Whisk image generation."
 }
