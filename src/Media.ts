@@ -4,14 +4,12 @@ import { Whisk, type Account } from "./Whisk.js";
 import type {
     VideoAspectRatioType,
     ImageAspectRatioType,
-    ImageGenerationModelType,
+    ImageModelType,
     MediaConfig,
-    VideoGenerationModelType,
-    ImageRefinementModelType,
-    PromptConfig
+    VideoGenerationModelType
 } from "./Types.js";
 import { request } from "./Utils.js";
-import { VideoGenerationModel } from "./Constants.js";
+import { VideoGenerationModel, ImageModel } from "./Constants.js";
 import path from "path";
 
 export class Media {
@@ -23,7 +21,7 @@ export class Media {
     readonly mediaGenerationId: string;
     readonly mediaType: "VIDEO" | "IMAGE";
     readonly aspectRatio: ImageAspectRatioType | VideoAspectRatioType;
-    readonly model: ImageGenerationModelType | VideoGenerationModelType | ImageRefinementModelType;
+    readonly model: ImageModelType | VideoGenerationModelType;
 
     readonly account: Account;
 
@@ -53,7 +51,7 @@ export class Media {
     }
 
     /**
-    * Image to Text but doesn't support videos
+    * Image to Text - generates captions for the image
     *
     * @param count Number of captions to generate (min: 1, max: 8)
     */
@@ -70,14 +68,19 @@ export class Media {
     }
 
     /**
-     * Refine/Edit an image using nano banana
+     * Refine/Edit an image using AI
      *
-     * @param edit Refinement prompt
+     * @param edit Refinement prompt describing the changes
+     * @param model Image model to use (default: GEM_PIX)
      * @returns Refined image
      */
-    async refine(edit: string): Promise<Media> {
+    async refine(edit: string, model: ImageModelType = "GEM_PIX"): Promise<Media> {
         if (this.mediaType === "VIDEO") {
             throw new Error("can't refine a video");
+        }
+
+        if (!Object.values(ImageModel).includes(model)) {
+            throw new Error(`'${model}': invalid image model. Use 'R2I' or 'GEM_PIX'`)
         }
 
         const refinementResult = await request<any>(
@@ -91,7 +94,7 @@ export class Media {
                         },
                         "imageModelSettings": {
                             "aspectRatio": this.aspectRatio,
-                            "imageModel": "GEM_PIX",
+                            "imageModel": model,
                         },
                         "editInput": {
                             "caption": this.prompt,
@@ -133,13 +136,13 @@ export class Media {
     }
 
     /**
-    * Initiates video animation request
+    * Animate image to video
     * Note: Only landscape images can be animated
     *
-    * @param videoScript Video script to be followed
-    * @param model Video generation model to be used
+    * @param videoScript Description of the animation/motion
+    * @param model Video generation model (default: VEO_3_1)
     */
-    async animate(videoScript: string, model: VideoGenerationModelType): Promise<Media> {
+    async animate(videoScript: string, model: VideoGenerationModelType = "VEO_3_1_I2V_12STEP"): Promise<Media> {
         if (this.mediaType === "VIDEO") {
             throw new Error("can't animate a video")
         }
@@ -149,7 +152,7 @@ export class Media {
         }
 
         if (!Object.values(VideoGenerationModel).includes(model)) {
-            throw new Error(`'${model}': invalid video generation model provided`)
+            throw new Error(`'${model}': invalid video generation model`)
         }
 
         const videoStatusResults = await request<any>(
@@ -185,8 +188,8 @@ export class Media {
                 }
             );
 
-            // Await for 2 second before each request
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            // Await for 3 seconds before each request
+            await new Promise(resolve => setTimeout(resolve, 3000))
 
             if (videoResults.status === "MEDIA_GENERATION_STATUS_SUCCESSFUL") {
                 const video = videoResults.operation.metadata.video;
@@ -204,18 +207,23 @@ export class Media {
                 });
             }
 
-            if (i >= 20) {
-                throw new Error("failed to generate video: " + videoResults)
+            if (videoResults.status === "MEDIA_GENERATION_STATUS_FAILED" ||
+                videoResults.status === "MEDIA_GENERATION_STATUS_REJECTED") {
+                throw new Error(`Video generation failed: ${videoResults.status}`);
+            }
+
+            if (i >= 30) {
+                throw new Error("Video generation timeout after 30 attempts")
             }
         }
     }
 
     /**
-         * Saves the media to the local disk
-         * 
-         * @param directory Directory path to save the media (default: current directory)
-         * @returns The absolute path of the saved file
-         */
+     * Saves the media to the local disk
+     *
+     * @param directory Directory path to save the media (default: current directory)
+     * @returns The absolute path of the saved file
+     */
     save(directory: string = "."): string {
         if (!fs.existsSync(directory)) {
             fs.mkdirSync(directory, { recursive: true });

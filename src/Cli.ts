@@ -5,7 +5,7 @@ import { Whisk } from "./Whisk.js";
 import { imageToBase64 } from "./Utils.js";
 import {
     ImageAspectRatio,
-    ImageGenerationModel,
+    ImageModel,
     VideoGenerationModel
 } from "./Constants.js";
 
@@ -17,7 +17,7 @@ await y
     .command(
         "generate",
         "Generate new images using a temporary project",
-        (yargs) => {
+        (yargs: any) => {
             return yargs
                 .option("prompt", {
                     alias: "p",
@@ -29,8 +29,8 @@ await y
                     alias: "m",
                     describe: "Image generation model",
                     type: "string",
-                    default: "IMAGEN_3_5",
-                    choices: Object.keys(ImageGenerationModel)
+                    default: "R2I",
+                    choices: Object.keys(ImageModel)
                 })
                 .option("aspect", {
                     alias: "a",
@@ -58,7 +58,7 @@ await y
                     demandOption: true,
                 })
         },
-        async (argv) => {
+        async (argv: any) => {
             const whisk = new Whisk(argv.cookie);
             await whisk.account.refresh();
             console.log(whisk.account.toString());
@@ -76,7 +76,7 @@ await y
 
                 const media = await project.generateImage({
                     prompt: argv.prompt,
-                    model: ImageGenerationModel[argv.model as keyof typeof ImageGenerationModel],
+                    model: ImageModel[argv.model as keyof typeof ImageModel],
                     aspectRatio: aspectVal,
                     seed: argv.seed
                 });
@@ -94,7 +94,7 @@ await y
     .command(
         "animate <mediaId>",
         "Animate an existing landscape image into a video",
-        (yargs) => {
+        (yargs: any) => {
             return yargs
                 .positional("mediaId", {
                     describe: "The ID of the image to animate",
@@ -111,7 +111,7 @@ await y
                     alias: "m",
                     describe: "Video generation model",
                     type: "string",
-                    default: "VEO_FAST_3_1",
+                    default: "VEO_3_1",
                     choices: Object.keys(VideoGenerationModel)
                 })
                 .option("dir", {
@@ -127,7 +127,7 @@ await y
                     demandOption: true,
                 })
         },
-        async (argv) => {
+        async (argv: any) => {
             const whisk = new Whisk(argv.cookie);
             await whisk.account.refresh();
             console.log(whisk.account.toString());
@@ -156,7 +156,7 @@ await y
     .command(
         "refine <mediaId>",
         "Edit/Refine an existing image",
-        (yargs) => {
+        (yargs: any) => {
             return yargs
                 .positional("mediaId", {
                     describe: "The ID of the image to refine",
@@ -168,6 +168,13 @@ await y
                     describe: "Instruction for editing (e.g., 'Make it snowy')",
                     type: "string",
                     demandOption: true
+                })
+                .option("model", {
+                    alias: "m",
+                    describe: "Image model for refinement",
+                    type: "string",
+                    default: "GEM_PIX",
+                    choices: Object.keys(ImageModel)
                 })
                 .option("dir", {
                     alias: "d",
@@ -182,7 +189,7 @@ await y
                     demandOption: true,
                 })
         },
-        async (argv) => {
+        async (argv: any) => {
             const whisk = new Whisk(argv.cookie);
             await whisk.account.refresh();
             console.log(whisk.account.toString());
@@ -193,7 +200,10 @@ await y
                 const originalMedia = await Whisk.getMedia(argv.mediaId, whisk.account);
 
                 console.log("[*] Refining image...");
-                const refinedMedia = await originalMedia.refine(argv.prompt);
+                const refinedMedia = await originalMedia.refine(
+                    argv.prompt,
+                    ImageModel[argv.model as keyof typeof ImageModel]
+                );
 
                 const savedPath = refinedMedia.save(argv.dir);
                 console.log(`[+] Image refined successfully!`);
@@ -207,7 +217,7 @@ await y
     .command(
         "caption",
         "Generate captions for a local image file",
-        (yargs) => {
+        (yargs: any) => {
             return yargs
                 .option("file", {
                     alias: "f",
@@ -228,7 +238,7 @@ await y
                     demandOption: true,
                 })
         },
-        async (argv) => {
+        async (argv: any) => {
             const whisk = new Whisk(argv.cookie);
             await whisk.account.refresh();
             console.log(whisk.account.toString());
@@ -244,7 +254,7 @@ await y
                 const captions = await Whisk.generateCaption(rawBase64, whisk.account, argv.count);
 
                 console.log("\n--- Captions ---");
-                captions.forEach((cap, i) => {
+                captions.forEach((cap: string, i: number) => {
                     console.log(`[${i + 1}] ${cap}`);
                 });
 
@@ -256,7 +266,7 @@ await y
     .command(
         "fetch <mediaId>",
         "Download an existing generated media by ID",
-        (yargs) => {
+        (yargs: any) => {
             return yargs
                 .positional("mediaId", {
                     describe: "Unique ID of generated media",
@@ -276,7 +286,7 @@ await y
                     demandOption: true,
                 })
         },
-        async (argv) => {
+        async (argv: any) => {
             const whisk = new Whisk(argv.cookie);
             await whisk.account.refresh();
             console.log(whisk.account.toString());
@@ -295,7 +305,7 @@ await y
     .command(
         "delete <mediaId>",
         "Delete a generated media from the cloud",
-        (yargs) => {
+        (yargs: any) => {
             return yargs
                 .positional("mediaId", {
                     describe: "Unique ID of generated media to delete",
@@ -309,7 +319,7 @@ await y
                     demandOption: true,
                 })
         },
-        async (argv) => {
+        async (argv: any) => {
             const whisk = new Whisk(argv.cookie);
             await whisk.account.refresh();
             console.log(whisk.account.toString());
