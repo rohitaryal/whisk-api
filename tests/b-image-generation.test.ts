@@ -156,3 +156,27 @@ describe("Generate image with diff. aspect ratio", async () => {
         }, 20000);
     })
 });
+
+test.if(!!cookie)("Generate image with imagefx", async () => {
+    let image = await whisk.generateImage("a cute cat");
+    expect(image).toBeArrayOfSize(1);
+    image = image[0];
+
+    expect(image.account).toBe(whisk.account);
+    expect(image.encodedMedia).toBeString();
+    expect(image.encodedMedia.length).toBeGreaterThan(82);
+    expect(image.model).toBe("IMAGEN_3_5");
+}, 20000);
+
+
+test.if(!!cookie)("Generate multiple images with imagefx", async () => {
+    let image = await whisk.generateImage("a cute cat", 4);
+    expect(image).toBeArrayOfSize(4);
+    image = image[0];
+
+    expect(image.account).toBe(whisk.account);
+    expect(image.encodedMedia).toBeString();
+    expect(image.encodedMedia.length).toBeGreaterThan(82);
+    expect(image.model).toBe("IMAGEN_3_5");
+}, 20000)
+
