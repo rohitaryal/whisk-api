@@ -1,5 +1,7 @@
+import { ImageGenerationModel } from "./Constants.js";
 import { Media } from "./Media.js";
 import { Project } from "./Project.js";
+import { ImageGenerationModelType, PromptConfig } from "./Types.js";
 import { request } from "./Utils.js";
 
 export class Account {
@@ -206,6 +208,72 @@ export class Whisk {
         );
 
         return new Project(projectInfo.workflowId, this.account);
+    }
+
+    /**
+     * Uses imagefx's api to generate image.
+     * Advantage here is it can generate multiple images in single request
+     */
+    async generateImage(input: string | PromptConfig, count = 1): Promise<Media> {
+        if (typeof input === "string") {
+            input = {
+                seed: 0,
+                prompt: input,
+                model: "IMAGEN_3_5",
+                aspectRatio: "IMAGE_ASPECT_RATIO_LANDSCAPE",
+            } as PromptConfig;
+        }
+
+        if (!input.seed) input.seed = 0;
+        if (!count) count = 1;
+        if (!input.model) input.model = "IMAGEN_3_5";
+        if (!input.aspectRatio) input.aspectRatio = "IMAGE_ASPECT_RATIO_LANDSCAPE";
+        if (!input.prompt?.trim?.()) throw new Error("prompt is required");
+
+        if (!Object.values(ImageGenerationModel).includes(input.model as ImageGenerationModelType)) {
+            throw new Error(`'${input.model}': invalid image generation model provided for imagefx`)
+        }
+
+        if (count < 1 || count > 8) {
+            throw new Error(`'${count}': image generation count must be between 1 and 8 (1 <= count <= 8)`)
+        }
+
+        const generationResponse = await request<any>(
+            "https://aisandbox-pa.googleapis.com/v1:runImageFx",
+            {
+                headers: { "authorization": `Bearer ${await this.account.getToken()}` },
+                body: JSON.stringify({
+                    "userInput": {
+                        "candidatesCount": count,
+                        "prompts": [input.prompt],
+                        "seed": input.seed
+                    },
+                    "clientContext": {
+                        "sessionId": ";1768371666629",
+                        "tool": "IMAGE_FX"
+                    },
+                    "modelInput": {
+                        "modelNameType": input.model
+                    },
+                    "aspectRatio": input.aspectRatio
+                }),
+                method: "POST",
+            }
+        );
+
+        return generationResponse.imagePanels[0].generatedImages.map((img: any) => {
+            return new Media({
+                seed: img.seed,
+                prompt: img.prompt,
+                workflowId: img.workflowId,
+                encodedMedia: img.encodedImage,
+                mediaGenerationId: img.mediaGenerationId,
+                aspectRatio: img.aspectRatio,
+                mediaType: "IMAGE",
+                model: img.modelNameType,
+                account: this.account
+            });
+        });
     }
 }
 
