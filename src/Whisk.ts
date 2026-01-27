@@ -214,7 +214,7 @@ export class Whisk {
      * Uses imagefx's api to generate image.
      * Advantage here is it can generate multiple images in single request
      */
-    async generateImage(input: string | PromptConfig, count = 1): Promise<Media> {
+    async generateImage(input: string | PromptConfig, count = 1): Promise<Media[]> {
         if (typeof input === "string") {
             input = {
                 seed: 0,
