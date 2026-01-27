@@ -1,5 +1,5 @@
 import type { Account } from "./Whisk.js";
-import { ImageAspectRatio, VideoAspectRatio, ImageExtension, ImageGenerationModel, VideoGenerationModel, ImageRefinementModel } from "./Constants.js";
+import { ImageAspectRatio, VideoAspectRatio, ImageExtension, ImageModel, VideoGenerationModel, MediaCategory } from "./Constants.js";
 
 export interface MediaConfig {
     seed: number;
@@ -10,20 +10,35 @@ export interface MediaConfig {
     mediaGenerationId: string;
     mediaType: "VIDEO" | "IMAGE";
     aspectRatio: ImageAspectRatioType | VideoAspectRatioType;
-    model: ImageGenerationModelType | VideoGenerationModelType;
+    model: ImageModelType | VideoGenerationModelType;
     account: Account;
 }
 
 export interface PromptConfig {
     seed?: number;
     prompt: string;
-    aspectRatio?: ImageAspectRatioType | VideoAspectRatioType;
-    model?: ImageGenerationModelType | VideoGenerationModelType;
+    aspectRatio?: ImageAspectRatioType;
+    model?: ImageModelType;
+}
+
+export interface RecipeMediaInput {
+    caption: string;
+    mediaGenerationId: string;
+    category: MediaCategoryType;
+}
+
+export interface RecipeConfig {
+    seed?: number;
+    userInstruction: string;
+    aspectRatio?: ImageAspectRatioType;
+    subject: RecipeMediaInput;
+    scene?: RecipeMediaInput;
+    style?: RecipeMediaInput;
 }
 
 export type ImageAspectRatioType = typeof ImageAspectRatio[keyof typeof ImageAspectRatio];
 export type VideoAspectRatioType = typeof VideoAspectRatio[keyof typeof VideoAspectRatio];
 export type ImageExtensionTypes = typeof ImageExtension[keyof typeof ImageExtension];
-export type ImageGenerationModelType = typeof ImageGenerationModel[keyof typeof ImageGenerationModel];
+export type ImageModelType = typeof ImageModel[keyof typeof ImageModel];
 export type VideoGenerationModelType = typeof VideoGenerationModel[keyof typeof VideoGenerationModel];
-export type ImageRefinementModelType = typeof ImageRefinementModel[keyof typeof ImageRefinementModel];
+export type MediaCategoryType = typeof MediaCategory[keyof typeof MediaCategory];

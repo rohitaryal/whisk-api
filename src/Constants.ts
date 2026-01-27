@@ -28,15 +28,18 @@ export const VideoAspectRatio = Object.freeze({
     UNSPECIFIED: "VIDEO_ASPECT_RATIO_UNSPECIFIED",
 } as const);
 
-export const ImageGenerationModel = Object.freeze({
-    IMAGEN_3_5: "IMAGEN_3_5",
-} as const);
-
-export const ImageRefinementModel = Object.freeze({
+export const ImageModel = Object.freeze({
+    R2I: "R2I",
     GEM_PIX: "GEM_PIX",
-});
+} as const);
 
 export const VideoGenerationModel = Object.freeze({
     VEO_3_1: "VEO_3_1_I2V_12STEP",
-    VEO_FAST_3_1: "veo_3_1_i2v_s_fast",
+} as const);
+
+export const MediaCategory = Object.freeze({
+    SUBJECT: "MEDIA_CATEGORY_SUBJECT",
+    SCENE: "MEDIA_CATEGORY_SCENE",
+    STYLE: "MEDIA_CATEGORY_STYLE",
+    BOARD: "MEDIA_CATEGORY_BOARD",
 } as const);
