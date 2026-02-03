@@ -139,7 +139,7 @@ export class Project {
 
         return {
             uploadMediaGenerationId: uploadResult.uploadMediaGenerationId,
-            caption,
+            prompt: caption,
             category,
         };
     }
@@ -171,7 +171,7 @@ export class Project {
         const sessionId = `;${Date.now()}`;
 
         const recipeMediaInputs = references.map(ref => ({
-            caption: ref.caption,
+            caption: ref.prompt,
             mediaInput: {
                 mediaCategory: ref.category,
                 mediaGenerationId: ref.uploadMediaGenerationId,

@@ -31,6 +31,6 @@ export type MediaCategoryType = typeof MediaCategory[keyof typeof MediaCategory]
 
 export interface ReferenceImageResult {
     uploadMediaGenerationId: string;
-    caption: string;
+    prompt: string;
     category: MediaCategoryType;
 }
