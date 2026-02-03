@@ -1,6 +1,6 @@
-import { ImageGenerationModel } from "./Constants.js";
+import { ImageGenerationModel, MediaCategory } from "./Constants.js";
 import { Media } from "./Media.js";
-import type { ImageGenerationModelType, PromptConfig } from "./Types.js";
+import type { ImageGenerationModelType, MediaCategoryType, PromptConfig, ReferenceImageResult } from "./Types.js";
 import { request } from "./Utils.js";
 import { Account } from "./Whisk.js";
 
@@ -70,6 +70,78 @@ export class Project {
             model: img.imageModel,
             account: this.account
         });
+    }
+
+    /**
+     * Upload a reference image to the project.
+     * Captions the image automatically and uploads it with the given category.
+     *
+     * @param input Base64 encoded image (e.g. "data:image/jpeg;base64,...")
+     * @param category Media category: MEDIA_CATEGORY_SUBJECT, MEDIA_CATEGORY_SCENE, or MEDIA_CATEGORY_STYLE
+     * @returns Upload result with the media generation id, caption, and category
+     */
+    async uploadReferenceImage(input: string, category: MediaCategoryType): Promise<ReferenceImageResult> {
+        if (!(input?.trim?.())) {
+            throw new Error("input image is required");
+        }
+
+        if (!Object.values(MediaCategory).includes(category)) {
+            throw new Error(`'${category}': invalid media category`);
+        }
+
+        const sessionId = `;${Date.now()}`;
+
+        // Step 1: Caption the image
+        const captionResult = await request<{ candidates: { output: string; mediaGenerationId: string }[] }>(
+            "https://labs.google/fx/api/trpc/backbone.captionImage",
+            {
+                headers: { cookie: this.account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "sessionId": sessionId,
+                            "workflowId": this.projectId
+                        },
+                        "captionInput": {
+                            "candidatesCount": 1,
+                            "mediaInput": {
+                                "mediaCategory": category,
+                                "rawBytes": input
+                            }
+                        }
+                    }
+                })
+            }
+        );
+
+        const caption = captionResult.candidates[0].output;
+
+        // Step 2: Upload the image with caption
+        const uploadResult = await request<{ uploadMediaGenerationId: string }>(
+            "https://labs.google/fx/api/trpc/backbone.uploadImage",
+            {
+                headers: { cookie: this.account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "workflowId": this.projectId,
+                            "sessionId": sessionId
+                        },
+                        "uploadMediaInput": {
+                            "mediaCategory": category,
+                            "rawBytes": input,
+                            "caption": caption
+                        }
+                    }
+                })
+            }
+        );
+
+        return {
+            uploadMediaGenerationId: uploadResult.uploadMediaGenerationId,
+            caption,
+            category,
+        };
     }
 
     /**
