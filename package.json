@@ -1,5 +1,5 @@
 {
-    "name": "@rohitaryal/whisk-api",
+    "name": "@felipepasc/whisk-api",
     "version": "3.1.1",
     "type": "module",
     "main": "./dist/index.js",
@@ -34,7 +34,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/rohitaryal/whisk-api.git"
+        "url": "git+https://github.com/felipepasc/whisk-api.git"
     },
     "keywords": [
         "whisk",
@@ -42,11 +42,11 @@
         "ai-image-generator",
         "labs-google"
     ],
-    "author": "rohitaryal",
+    "author": "felipepasc",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/rohitaryal/whisk-api/issues"
+        "url": "https://github.com/felipepasc/whisk-api/issues"
     },
-    "homepage": "https://github.com/rohitaryal/whisk-api#readme",
+    "homepage": "https://github.com/felipepasc/whisk-api#readme",
     "description": "Unofficial API for Whisk image generation."
 }
