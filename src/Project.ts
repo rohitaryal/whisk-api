@@ -1,6 +1,6 @@
-import { ImageGenerationModel } from "./Constants.js";
+import { ImageGenerationModel, MediaCategory } from "./Constants.js";
 import { Media } from "./Media.js";
-import type { ImageGenerationModelType, PromptConfig } from "./Types.js";
+import type { ImageAspectRatioType, ImageGenerationModelType, MediaCategoryType, PromptConfig, ReferenceImageResult } from "./Types.js";
 import { request } from "./Utils.js";
 import { Account } from "./Whisk.js";
 
@@ -68,6 +68,148 @@ export class Project {
             aspectRatio: img.aspectRatio,
             mediaType: "IMAGE",
             model: img.imageModel,
+            account: this.account
+        });
+    }
+
+    /**
+     * Upload a reference image to the project.
+     * Captions the image automatically and uploads it with the given category.
+     *
+     * @param input Base64 encoded image (e.g. "data:image/jpeg;base64,...")
+     * @param category Media category: MEDIA_CATEGORY_SUBJECT, MEDIA_CATEGORY_SCENE, or MEDIA_CATEGORY_STYLE
+     * @returns Upload result with the media generation id, caption, and category
+     */
+    async uploadReferenceImage(input: string, category: MediaCategoryType): Promise<ReferenceImageResult> {
+        if (!(input?.trim?.())) {
+            throw new Error("input image is required");
+        }
+
+        if (!Object.values(MediaCategory).includes(category)) {
+            throw new Error(`'${category}': invalid media category`);
+        }
+
+        const sessionId = `;${Date.now()}`;
+
+        // Step 1: Caption the image
+        const captionResult = await request<{ candidates: { output: string; mediaGenerationId: string }[] }>(
+            "https://labs.google/fx/api/trpc/backbone.captionImage",
+            {
+                headers: { cookie: this.account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "sessionId": sessionId,
+                            "workflowId": this.projectId
+                        },
+                        "captionInput": {
+                            "candidatesCount": 1,
+                            "mediaInput": {
+                                "mediaCategory": category,
+                                "rawBytes": input
+                            }
+                        }
+                    }
+                })
+            }
+        );
+
+        const caption = captionResult.candidates[0].output;
+
+        // Step 2: Upload the image with caption
+        const uploadResult = await request<{ uploadMediaGenerationId: string }>(
+            "https://labs.google/fx/api/trpc/backbone.uploadImage",
+            {
+                headers: { cookie: this.account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "workflowId": this.projectId,
+                            "sessionId": sessionId
+                        },
+                        "uploadMediaInput": {
+                            "mediaCategory": category,
+                            "rawBytes": input,
+                            "caption": caption
+                        }
+                    }
+                })
+            }
+        );
+
+        return {
+            uploadMediaGenerationId: uploadResult.uploadMediaGenerationId,
+            prompt: caption,
+            category,
+        };
+    }
+
+    /**
+     * Generate an image using uploaded reference images (subject, scene, style).
+     * Uses the R2I model with the BACKBONE tool.
+     *
+     * @param instruction Text instruction for image generation
+     * @param references Array of ReferenceImageResult from uploadReferenceImage()
+     * @param options Optional seed and aspect ratio
+     * @returns Generated image as Media
+     */
+    async generateImageFromReferences(
+        instruction: string,
+        references: ReferenceImageResult[],
+        options?: { seed?: number; aspectRatio?: ImageAspectRatioType }
+    ): Promise<Media> {
+        if (!instruction?.trim?.()) {
+            throw new Error("instruction is required");
+        }
+
+        if (!references?.length) {
+            throw new Error("at least one reference image is required");
+        }
+
+        const seed = options?.seed ?? Math.floor(Math.random() * 1000000);
+        const aspectRatio = options?.aspectRatio ?? "IMAGE_ASPECT_RATIO_LANDSCAPE";
+        const sessionId = `;${Date.now()}`;
+
+        const recipeMediaInputs = references.map(ref => ({
+            caption: ref.prompt,
+            mediaInput: {
+                mediaCategory: ref.category,
+                mediaGenerationId: ref.uploadMediaGenerationId,
+            }
+        }));
+
+        const generationResponse = await request<any>(
+            "https://aisandbox-pa.googleapis.com/v1/whisk:generateImage",
+            {
+                headers: { authorization: `Bearer ${await this.account.getToken()}` },
+                body: JSON.stringify({
+                    "clientContext": {
+                        "workflowId": this.projectId,
+                        "tool": "BACKBONE",
+                        "sessionId": sessionId
+                    },
+                    "seed": seed,
+                    "imageModelSettings": {
+                        "imageModel": "R2I",
+                        "aspectRatio": aspectRatio
+                    },
+                    "userInstruction": instruction,
+                    "recipeMediaInputs": recipeMediaInputs
+                })
+            }
+        );
+
+        const img = generationResponse.imagePanels[0].generatedImages[0];
+
+        return new Media({
+            seed: img.seed,
+            prompt: img.prompt ?? instruction,
+            workflowId: img.workflowId ?? this.projectId,
+            encodedMedia: img.encodedImage,
+            mediaGenerationId: img.mediaGenerationId,
+            aspectRatio: img.aspectRatio,
+            mediaType: "IMAGE",
+            model: img.imageModel ?? "R2I",
             account: this.account
         });
     }
