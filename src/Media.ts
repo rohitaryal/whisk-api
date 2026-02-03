@@ -189,14 +189,15 @@ export class Media {
             await new Promise(resolve => setTimeout(resolve, 2000))
 
             if (videoResults.status === "MEDIA_GENERATION_STATUS_SUCCESSFUL") {
-                const video = videoResults.operation.metadata.video;
+                const videoOperation = videoResults.operations[0];
+                const video = videoOperation.operation.metadata.video;
 
                 return new Media({
                     seed: video.seed,
                     prompt: video.prompt,
                     workflowId: this.workflowId,
-                    encodedMedia: videoResults.rawBytes,
-                    mediaGenerationId: videoResults.mediaGenerationId,
+                    encodedMedia: videoOperation.rawBytes,
+                    mediaGenerationId: videoOperation.mediaGenerationId,
                     aspectRatio: video.aspectRatio,
                     mediaType: "VIDEO",
                     model: video.model,
@@ -204,8 +205,8 @@ export class Media {
                 });
             }
 
-            if (i >= 20) {
-                throw new Error("failed to generate video: " + videoResults)
+            if (i >= 200) {
+                throw new Error("failed to generate video: " + JSON.stringify(videoResults))
             }
         }
     }
