@@ -48,5 +48,8 @@
         "url": "https://github.com/felipepasc/whisk-api/issues"
     },
     "homepage": "https://github.com/felipepasc/whisk-api#readme",
-    "description": "Unofficial API for Whisk image generation."
+    "description": "Unofficial API for Whisk image generation.",
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
 }

@@ -1,9 +1,9 @@
-name: "Test and release to NPM.JS"
+name: "Test and publish to GitHub Packages"
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -24,18 +24,16 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: List content
-        run: ls -al
-
       - name: Run test
         run: bun test --concurrent
 
   publish:
-    name: Publish to NPM
+    name: Publish to GitHub Packages
     runs-on: ubuntu-latest
     needs: test
-    env:
-      NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
@@ -50,5 +48,12 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Publish to NPM
-        run: bun publish -p --access public
+      - name: Configure npm registry
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+          echo "@felipepasc:registry=https://npm.pkg.github.com" >> .npmrc
+
+      - name: Publish to GitHub Packages
+        run: bun publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
