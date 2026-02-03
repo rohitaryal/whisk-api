@@ -1,6 +1,6 @@
 import { ImageGenerationModel, MediaCategory } from "./Constants.js";
 import { Media } from "./Media.js";
-import type { ImageGenerationModelType, MediaCategoryType, PromptConfig, ReferenceImageResult } from "./Types.js";
+import type { ImageAspectRatioType, ImageGenerationModelType, MediaCategoryType, PromptConfig, ReferenceImageResult } from "./Types.js";
 import { request } from "./Utils.js";
 import { Account } from "./Whisk.js";
 
@@ -142,6 +142,76 @@ export class Project {
             caption,
             category,
         };
+    }
+
+    /**
+     * Generate an image using uploaded reference images (subject, scene, style).
+     * Uses the R2I model with the BACKBONE tool.
+     *
+     * @param instruction Text instruction for image generation
+     * @param references Array of ReferenceImageResult from uploadReferenceImage()
+     * @param options Optional seed and aspect ratio
+     * @returns Generated image as Media
+     */
+    async generateImageFromReferences(
+        instruction: string,
+        references: ReferenceImageResult[],
+        options?: { seed?: number; aspectRatio?: ImageAspectRatioType }
+    ): Promise<Media> {
+        if (!instruction?.trim?.()) {
+            throw new Error("instruction is required");
+        }
+
+        if (!references?.length) {
+            throw new Error("at least one reference image is required");
+        }
+
+        const seed = options?.seed ?? Math.floor(Math.random() * 1000000);
+        const aspectRatio = options?.aspectRatio ?? "IMAGE_ASPECT_RATIO_LANDSCAPE";
+        const sessionId = `;${Date.now()}`;
+
+        const recipeMediaInputs = references.map(ref => ({
+            caption: ref.caption,
+            mediaInput: {
+                mediaCategory: ref.category,
+                mediaGenerationId: ref.uploadMediaGenerationId,
+            }
+        }));
+
+        const generationResponse = await request<any>(
+            "https://aisandbox-pa.googleapis.com/v1/whisk:generateImage",
+            {
+                headers: { authorization: `Bearer ${await this.account.getToken()}` },
+                body: JSON.stringify({
+                    "clientContext": {
+                        "workflowId": this.projectId,
+                        "tool": "BACKBONE",
+                        "sessionId": sessionId
+                    },
+                    "seed": seed,
+                    "imageModelSettings": {
+                        "imageModel": "R2I",
+                        "aspectRatio": aspectRatio
+                    },
+                    "userInstruction": instruction,
+                    "recipeMediaInputs": recipeMediaInputs
+                })
+            }
+        );
+
+        const img = generationResponse.imagePanels[0].generatedImages[0];
+
+        return new Media({
+            seed: img.seed,
+            prompt: img.prompt ?? instruction,
+            workflowId: img.workflowId ?? this.projectId,
+            encodedMedia: img.encodedImage,
+            mediaGenerationId: img.mediaGenerationId,
+            aspectRatio: img.aspectRatio,
+            mediaType: "IMAGE",
+            model: img.imageModel ?? "R2I",
+            account: this.account
+        });
     }
 
     /**
