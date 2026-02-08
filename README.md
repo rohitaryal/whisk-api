@@ -191,7 +191,7 @@ Options:
     video.save("./videos");
     ```
 
-More examples are at: [/examples](https://github.com/rohitaryal/imageFX-api/tree/main/examples)
+More examples are at: [/examples](https://github.com/rohitaryal/whisk-api/tree/main/examples)
 </details>
 
 ## Help
