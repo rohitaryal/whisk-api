@@ -1,15 +1,15 @@
-import { ImageGenerationModel } from "./Constants.js";
+import { ImageGenerationModel, MediaCategory } from "./Constants.js";
 import { Media } from "./Media.js";
-import type { ImageGenerationModelType, PromptConfig } from "./Types.js";
+import type { ImageGenerationModelType, MediaCategoryType, MediaReference, PromptConfig } from "./Types.js";
 import { request } from "./Utils.js";
-import { Account } from "./Whisk.js";
+import { Account, Whisk } from "./Whisk.js";
 
 export class Project {
     readonly account: Account;
     readonly projectId: string;
-    readonly subjects: Media[];
-    readonly scenes: Media[];
-    readonly styles: Media[];
+    readonly subjects: MediaReference[];
+    readonly scenes: MediaReference[];
+    readonly styles: MediaReference[];
 
     constructor(projectId: string, account: Account) {
         if (typeof projectId !== "string" || !projectId.trim()) {
@@ -25,6 +25,68 @@ export class Project {
         this.subjects = [];
         this.scenes = [];
         this.styles = [];
+    }
+
+    /**
+     * Uploads a custom image and adds it as a subject reference
+     *
+     * @param rawBytes Base64 encoded image (with or without data URI prefix)
+     */
+    async addSubject(rawBytes: string): Promise<void> {
+        await this.addReference(rawBytes, MediaCategory.SUBJECT, this.subjects);
+    }
+
+    /**
+     * Uploads a custom image and adds it as a scene reference
+     *
+     * @param rawBytes Base64 encoded image (with or without data URI prefix)
+     */
+    async addScene(rawBytes: string): Promise<void> {
+        await this.addReference(rawBytes, MediaCategory.SCENE, this.scenes);
+    }
+
+    /**
+     * Uploads a custom image and adds it as a style reference
+     *
+     * @param rawBytes Base64 encoded image (with or without data URI prefix)
+     */
+    async addStyle(rawBytes: string): Promise<void> {
+        await this.addReference(rawBytes, MediaCategory.STYLE, this.styles);
+    }
+
+    private async addReference(rawBytes: string, category: MediaCategoryType, target: MediaReference[]): Promise<void> {
+        if (!(rawBytes?.trim?.())) {
+            throw new Error("image data is required")
+        }
+
+        const captions = await request<{ candidates: { output: string }[] }>(
+            "https://labs.google/fx/api/trpc/backbone.captionImage",
+            {
+                headers: { cookie: this.account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "workflowId": this.projectId
+                        },
+                        "captionInput": {
+                            "candidatesCount": 1,
+                            "mediaInput": {
+                                "mediaCategory": category,
+                                "rawBytes": rawBytes
+                            }
+                        }
+                    }
+                })
+            }
+        );
+
+        const caption = captions.candidates[0].output;
+
+        const uploadMediaGenerationId = await Whisk.uploadImage(
+            rawBytes, caption, category, this.projectId, this.account
+        );
+
+        target.push({ prompt: caption, mediaGenerationId: uploadMediaGenerationId });
     }
 
     async generateImage(input: string | PromptConfig): Promise<Media> {

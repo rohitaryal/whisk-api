@@ -28,7 +28,7 @@ async function main() {
 
     console.log("Generating final image with above references")
     const generatedImage = await project.generateImageWithReferences("A pilot driving helicopter")
-    generatedImage.save()
+    generatedImage.save("./output")
 }
 
 main()
