@@ -30,6 +30,6 @@ export type ImageRefinementModelType = typeof ImageRefinementModel[keyof typeof 
 export type MediaCategoryType = typeof MediaCategory[keyof typeof MediaCategory];
 
 export interface MediaReference {
-    prompt: string;
+    caption: string;
     mediaGenerationId: string;
 }

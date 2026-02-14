@@ -2,29 +2,21 @@ import { Whisk } from "../src/Whisk.ts";
 
 const whisk = new Whisk(process.env.COOKIE!);
 
-// PLEASE READ THIS:
-//
-// Subjects, Scenes and Styles are used in following format
-//
-// You provide a in detail caption --> image generated --> detailed caption --> Used as subject,scene,style
-// You provide your own image --> detail caption --> Used as subject,scene,style
-//
-// The point is, it is provided as a prompt, not the image directly.
-
 async function main() {
     const project = await whisk.newProject("Generation with reference");
 
-    // Lets add a subject
-    console.log("Attaching a subject")
-    project.subjects.push(...await whisk.generateImage("jack the ripper in zebra stripped suit"));
+    // Generate images and use them as references
+    console.log("Generating subject image...")
+    const subjectImages = await whisk.generateImage("jack the ripper in zebra stripped suit");
+    project.addSubjectById(subjectImages[0].mediaGenerationId, subjectImages[0].prompt);
 
-    // Lets add a scene
-    console.log("Attaching a scene")
-    project.scenes.push(...await whisk.generateImage("Green hilly farm with blue sky"))
+    console.log("Generating scene image...")
+    const sceneImages = await whisk.generateImage("Green hilly farm with blue sky");
+    project.addSceneById(sceneImages[0].mediaGenerationId, sceneImages[0].prompt);
 
-    // Lets add a style
-    console.log("Attaching a style")
-    project.styles.push(...await whisk.generateImage("spontaneous, often unstructured, and hand-drawn illustration that combines various, seemingly random elements into a cohesive, often whimsical, composition"))
+    console.log("Generating style image...")
+    const styleImages = await whisk.generateImage("spontaneous, often unstructured, and hand-drawn illustration that combines various, seemingly random elements into a cohesive, often whimsical, composition");
+    project.addStyleById(styleImages[0].mediaGenerationId, styleImages[0].prompt);
 
     console.log("Generating final image with above references")
     const generatedImage = await project.generateImageWithReferences("A pilot driving helicopter")

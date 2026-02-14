@@ -15,7 +15,7 @@ if (!cookie) {
         const subjectImage = await project.generateImage("A cute cat");
         expect(subjectImage).toBeDefined();
 
-        project.subjects.push(subjectImage);
+        project.addSubjectById(subjectImage.mediaGenerationId, "A cute cat");
 
         const generatedImage = await project.generateImageWithReferences("The cat wearing a hat");
 
@@ -34,7 +34,7 @@ if (!cookie) {
         const styleImage = await project.generateImage("Oil painting of a sunset");
         expect(styleImage).toBeDefined();
 
-        project.styles.push(styleImage);
+        project.addStyleById(styleImage.mediaGenerationId, "Oil painting style");
 
         const generatedImage = await project.generateImageWithReferences("A futuristic city");
 
@@ -50,7 +50,7 @@ if (!cookie) {
         const sceneImage = await project.generateImage("A dense forest");
         expect(sceneImage).toBeDefined();
 
-        project.scenes.push(sceneImage);
+        project.addSceneById(sceneImage.mediaGenerationId, "A dense forest");
 
         const generatedImage = await project.generateImageWithReferences("A bear standing");
 
