@@ -1,15 +1,15 @@
-import { ImageGenerationModel } from "./Constants.js";
+import { ImageGenerationModel, MediaCategory } from "./Constants.js";
 import { Media } from "./Media.js";
-import type { ImageGenerationModelType, PromptConfig } from "./Types.js";
+import type { ImageGenerationModelType, MediaCategoryType, MediaReference, PromptConfig } from "./Types.js";
 import { request } from "./Utils.js";
-import { Account } from "./Whisk.js";
+import { Account, Whisk } from "./Whisk.js";
 
 export class Project {
     readonly account: Account;
     readonly projectId: string;
-    readonly subjects: Media[];
-    readonly scenes: Media[];
-    readonly styles: Media[];
+    readonly subjects: MediaReference[];
+    readonly scenes: MediaReference[];
+    readonly styles: MediaReference[];
 
     constructor(projectId: string, account: Account) {
         if (typeof projectId !== "string" || !projectId.trim()) {
@@ -25,6 +25,121 @@ export class Project {
         this.subjects = [];
         this.scenes = [];
         this.styles = [];
+    }
+
+    async addSubject(rawBytes: string): Promise<MediaReference> {
+        return await this.uploadAndAdd(rawBytes, MediaCategory.SUBJECT, this.subjects);
+    }
+
+    async addScene(rawBytes: string): Promise<MediaReference> {
+        return await this.uploadAndAdd(rawBytes, MediaCategory.SCENE, this.scenes);
+    }
+
+    async addStyle(rawBytes: string): Promise<MediaReference> {
+        return await this.uploadAndAdd(rawBytes, MediaCategory.STYLE, this.styles);
+    }
+
+    addSubjectById(mediaGenerationId: string, prompt: string): void {
+        this.addById(mediaGenerationId, prompt, this.subjects);
+    }
+
+    addSceneById(mediaGenerationId: string, prompt: string): void {
+        this.addById(mediaGenerationId, prompt, this.scenes);
+    }
+
+    addStyleById(mediaGenerationId: string, prompt: string): void {
+        this.addById(mediaGenerationId, prompt, this.styles);
+    }
+
+    removeSubject(mediaGenerationId: string): boolean {
+        return this.removeById(mediaGenerationId, this.subjects);
+    }
+
+    removeScene(mediaGenerationId: string): boolean {
+        return this.removeById(mediaGenerationId, this.scenes);
+    }
+
+    removeStyle(mediaGenerationId: string): boolean {
+        return this.removeById(mediaGenerationId, this.styles);
+    }
+
+    clearSubjects(): void {
+        this.subjects.length = 0;
+    }
+
+    clearScenes(): void {
+        this.scenes.length = 0;
+    }
+
+    clearStyles(): void {
+        this.styles.length = 0;
+    }
+
+    clearAllReferences(): void {
+        this.clearSubjects();
+        this.clearScenes();
+        this.clearStyles();
+    }
+
+    private async uploadAndAdd(rawBytes: string, category: MediaCategoryType, target: MediaReference[]): Promise<MediaReference> {
+        if (!(rawBytes?.trim?.())) {
+            throw new Error("image data is required")
+        }
+
+        const captions = await request<{ candidates: { output: string }[] }>(
+            "https://labs.google/fx/api/trpc/backbone.captionImage",
+            {
+                headers: { cookie: this.account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "workflowId": this.projectId
+                        },
+                        "captionInput": {
+                            "candidatesCount": 1,
+                            "mediaInput": {
+                                "mediaCategory": category,
+                                "rawBytes": rawBytes
+                            }
+                        }
+                    }
+                })
+            }
+        );
+
+        const caption = captions.candidates[0].output;
+
+        const uploadMediaGenerationId = await Whisk.uploadImage(
+            rawBytes, caption, category, this.projectId, this.account
+        );
+
+        const reference: MediaReference = { caption, mediaGenerationId: uploadMediaGenerationId };
+        target.push(reference);
+        return reference;
+    }
+
+    private addById(mediaGenerationId: string, caption: string, target: MediaReference[]): void {
+        if (!(mediaGenerationId?.trim?.())) {
+            throw new Error("mediaGenerationId is required")
+        }
+
+        if (!(caption?.trim?.())) {
+            throw new Error("caption is required")
+        }
+
+        target.push({ caption, mediaGenerationId });
+    }
+
+    private removeById(mediaGenerationId: string, target: MediaReference[]): boolean {
+        if (!(mediaGenerationId?.trim?.())) {
+            throw new Error("mediaGenerationId is required")
+        }
+
+        const index = target.findIndex(ref => ref.mediaGenerationId === mediaGenerationId);
+        if (index === -1) return false;
+
+        target.splice(index, 1);
+        return true;
     }
 
     async generateImage(input: string | PromptConfig): Promise<Media> {
@@ -121,7 +236,7 @@ export class Project {
                     "recipeMediaInputs": [
                         ...this.subjects.map(item => {
                             return {
-                                "caption": item.prompt,
+                                "caption": item.caption,
                                 "mediaInput": {
                                     "mediaCategory": "MEDIA_CATEGORY_SUBJECT",
                                     "mediaGenerationId": item.mediaGenerationId
@@ -130,7 +245,7 @@ export class Project {
                         }),
                         ...this.scenes.map(item => {
                             return {
-                                "caption": item.prompt,
+                                "caption": item.caption,
                                 "mediaInput": {
                                     "mediaCategory": "MEDIA_CATEGORY_SCENE",
                                     "mediaGenerationId": item.mediaGenerationId
@@ -139,7 +254,7 @@ export class Project {
                         }),
                         ...this.styles.map(item => {
                             return {
-                                "caption": item.prompt,
+                                "caption": item.caption,
                                 "mediaInput": {
                                     "mediaCategory": "MEDIA_CATEGORY_STYLE",
                                     "mediaGenerationId": item.mediaGenerationId

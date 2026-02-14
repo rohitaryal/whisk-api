@@ -26,6 +26,28 @@ export async function request<T>(input: RequestInfo | URL, init?: RequestInit): 
 }
 
 /**
+ * Fetches an image from a URL and returns base64 encoded string
+ *
+ * @param url URL of the image to fetch
+ */
+export async function imageFromUrl(url: string): Promise<string> {
+    if (!(url?.trim?.())) {
+        throw new Error("url is required");
+    }
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image (${response.status}): ${url}`);
+    }
+
+    const contentType = response.headers.get("content-type") || "image/png";
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
+}
+
+/**
  * Returns base64 encoded image
  *
  * @param imagePath Path to image file

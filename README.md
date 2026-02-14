@@ -20,7 +20,8 @@ bun i -g @rohitaryal/whisk-api
 3. Image Refinement (Editing/Inpainting using NanoBanana)
 4. Image to Text
 5. Project & Media Management
-6. Command line support
+6. **Custom Image References** (Subject, Scene, Style) for consistent character generation
+7. Command line support
 
 ## Usage
 
@@ -189,6 +190,56 @@ Options:
     const video = await refinedImage.animate("Camera flies through the streets", "VEO_FAST_3_1");
 
     video.save("./videos");
+    ```
+
+- **Reference Management for Consistent Characters**
+
+    ```typescript
+    import { Whisk, ImageAspectRatio } from "@rohitaryal/whisk-api";
+    import { imageToBase64 } from "@rohitaryal/whisk-api/utils";
+
+    const whisk = new Whisk(process.env.COOKIE);
+    const project = await whisk.newProject("Story");
+
+    // Upload and get IDs (store these for reuse)
+    const character = await project.addSubject(await imageToBase64("./character.png"));
+    const location = await project.addScene(await imageToBase64("./location.jpg"));
+    const artStyle = await project.addStyle(await imageToBase64("./style.jpg"));
+
+    console.log("Character ID:", character.mediaGenerationId);
+
+    // Generate with references
+    const img1 = await project.generateImageWithReferences("walking in the park");
+    img1.save("./output");
+
+    // With custom aspect ratio and seed
+    const img2 = await project.generateImageWithReferences({
+        prompt: "sitting on bench",
+        aspectRatio: ImageAspectRatio.PORTRAIT,
+        seed: 12345
+    });
+    img2.save("./output");
+
+    // Reuse IDs without re-uploading
+    const project2 = await whisk.newProject("Story Part 2");
+    project2.addSubjectById(character.mediaGenerationId, character.caption);
+    project2.addSceneById(location.mediaGenerationId, location.caption);
+
+    const img3 = await project2.generateImageWithReferences({
+        prompt: "running in the park",
+        aspectRatio: ImageAspectRatio.SQUARE
+    });
+    img3.save("./output");
+
+    // Granular control
+    project2.removeSubject(character.mediaGenerationId);
+    project2.clearScenes();
+    project2.clearAllReferences();
+
+    // Direct access to references
+    console.log("Subjects:", project2.subjects);
+    console.log("Scenes:", project2.scenes);
+    console.log("Styles:", project2.styles);
     ```
 
 More examples are at: [/examples](https://github.com/rohitaryal/whisk-api/tree/main/examples)
