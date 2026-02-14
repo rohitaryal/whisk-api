@@ -1,7 +1,7 @@
 import { ImageGenerationModel } from "./Constants.js";
 import { Media } from "./Media.js";
 import { Project } from "./Project.js";
-import { ImageGenerationModelType, PromptConfig } from "./Types.js";
+import { ImageGenerationModelType, MediaCategoryType, PromptConfig } from "./Types.js";
 import { request } from "./Utils.js";
 
 export class Account {
@@ -146,6 +146,50 @@ export class Whisk {
         );
 
         return captionResults.candidates.map(item => item.output);
+    }
+
+    /**
+     * Upload a custom image to Whisk's storage
+     *
+     * @param rawBytes Base64 encoded image
+     * @param caption Caption describing the image
+     * @param category Media category (SUBJECT, SCENE, or STYLE)
+     * @param workflowId Project workflow id
+     * @param account Account{} object
+     */
+    static async uploadImage(rawBytes: string, caption: string, category: MediaCategoryType, workflowId: string, account: Account): Promise<string> {
+        if (!(rawBytes?.trim?.())) {
+            throw new Error("image data is required")
+        }
+
+        if (!(caption?.trim?.())) {
+            throw new Error("caption is required")
+        }
+
+        if (!(account instanceof Account)) {
+            throw new Error("invalid or missing account")
+        }
+
+        const uploadResult = await request<{ uploadMediaGenerationId: string }>(
+            "https://labs.google/fx/api/trpc/backbone.uploadImage",
+            {
+                headers: { cookie: account.getCookie() },
+                body: JSON.stringify({
+                    "json": {
+                        "clientContext": {
+                            "workflowId": workflowId
+                        },
+                        "uploadMediaInput": {
+                            "mediaCategory": category,
+                            "rawBytes": rawBytes,
+                            "caption": caption
+                        }
+                    }
+                })
+            }
+        );
+
+        return uploadResult.uploadMediaGenerationId;
     }
 
     /**
