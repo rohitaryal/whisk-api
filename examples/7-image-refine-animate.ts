@@ -28,7 +28,7 @@ async function main() {
     try {
         const video = await refinedImage.animate(
             "Slow camera pan, snow falling gently",
-            VideoGenerationModel.VEO_FAST_3_1
+            VideoGenerationModel.VEO_3_1
         );
 
         const videoPath = video.save("./workflow/3_video");
