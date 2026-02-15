@@ -295,7 +295,7 @@ await y
     )
     .command(
         "upload <file>",
-        "Upload an image to be used as refernce later",
+        "Upload an image to be used as refernce later. References can't be used currently",
         (yargs) => {
             return yargs
                 .positional("file", {
