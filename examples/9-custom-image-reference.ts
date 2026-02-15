@@ -7,7 +7,8 @@ async function main() {
 
     // let add 2 characters as subject (caption + upload handled automatically)
     console.log("Uploading local image as subject...")
-    await project.addSubject({ file: "./assets/patrick.png" })
+    const patrick = await project.addSubject({ file: "./assets/patrick.png" })
+    console.log(patrick.mediaGenerationId, patrick.prompt);
     await project.addSubject({ file: "./assets/spongebob.png" })
 
     // can also use a URL directly
