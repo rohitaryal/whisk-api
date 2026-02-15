@@ -38,7 +38,8 @@ export const ImageRefinementModel = Object.freeze({
 
 export const VideoGenerationModel = Object.freeze({
     VEO_3_1: "VEO_3_1_I2V_12STEP",
-    VEO_FAST_3_1: "veo_3_1_i2v_s_fast",
+    // https://github.com/rohitaryal/whisk-api/issues/13
+    // VEO_FAST_3_1: "veo_3_1_i2v_s_fast",
 } as const);
 
 export const MediaCategory = Object.freeze({

@@ -8,7 +8,6 @@ import type {
     MediaConfig,
     VideoGenerationModelType,
     ImageRefinementModelType,
-    PromptConfig
 } from "./Types.js";
 import { request } from "./Utils.js";
 import { VideoGenerationModel } from "./Constants.js";
@@ -189,7 +188,7 @@ export class Media {
             await new Promise(resolve => setTimeout(resolve, 2000))
 
             if (videoResults.status === "MEDIA_GENERATION_STATUS_SUCCESSFUL") {
-                const video = videoResults.operation.metadata.video;
+                const video = videoResults.operations[0].operation.metadata.video;
 
                 return new Media({
                     seed: video.seed,
@@ -204,8 +203,10 @@ export class Media {
                 });
             }
 
-            if (i >= 20) {
-                throw new Error("failed to generate video: " + videoResults)
+            // Wait for few more time
+            // https://github.com/rohitaryal/whisk-api/issues/4
+            if (i >= 60) {
+                throw new Error("failed to generate video: " + JSON.stringify(videoResults))
             }
         }
     }
