@@ -6,6 +6,7 @@ import { imageToBase64 } from "./Utils.js";
 import {
     ImageAspectRatio,
     ImageGenerationModel,
+    MediaCategory,
     VideoGenerationModel
 } from "./Constants.js";
 
@@ -14,6 +15,36 @@ const y = yargs(hideBin(process.argv));
 await y
     .scriptName("whisk")
     .usage('$0 <cmd> [args]')
+    .option("cookie", {
+        alias: "c",
+        describe: "Google account cookie",
+        type: "string",
+        demandOption: true,
+    })
+    .command(
+        "project",
+        "Generate a new project",
+        (yargs) => {
+            return yargs
+                .option("name", {
+                    describe: "Project name",
+                    demandOption: false,
+                    type: "string",
+                    default: "Whisk-CLI project"
+                })
+        },
+        async (argv) => {
+            const whisk = new Whisk(argv.cookie);
+            await whisk.account.refresh();
+            console.log(whisk.account.toString());
+
+            console.log("[*] Creating new project...");
+
+            const project = await whisk.newProject(argv.name);
+
+            console.log("[+] Project ID:", project.projectId);
+        }
+    )
     .command(
         "generate",
         "Generate new images using a temporary project",
@@ -50,12 +81,6 @@ await y
                     describe: "Output directory",
                     type: "string",
                     default: "./output",
-                })
-                .option("cookie", {
-                    alias: "c",
-                    describe: "Google account cookie",
-                    type: "string",
-                    demandOption: true,
                 })
         },
         async (argv) => {
@@ -111,7 +136,7 @@ await y
                     alias: "m",
                     describe: "Video generation model",
                     type: "string",
-                    default: "VEO_FAST_3_1",
+                    default: "VEO_3_1",
                     choices: Object.keys(VideoGenerationModel)
                 })
                 .option("dir", {
@@ -119,12 +144,6 @@ await y
                     describe: "Output directory",
                     type: "string",
                     default: "./output",
-                })
-                .option("cookie", {
-                    alias: "c",
-                    describe: "Google account cookie",
-                    type: "string",
-                    demandOption: true,
                 })
         },
         async (argv) => {
@@ -175,12 +194,6 @@ await y
                     type: "string",
                     default: "./output",
                 })
-                .option("cookie", {
-                    alias: "c",
-                    describe: "Google account cookie",
-                    type: "string",
-                    demandOption: true,
-                })
         },
         async (argv) => {
             const whisk = new Whisk(argv.cookie);
@@ -220,12 +233,6 @@ await y
                     describe: "Number of captions",
                     type: "number",
                     default: 1
-                })
-                .option("cookie", {
-                    alias: "c",
-                    describe: "Google account cookie",
-                    type: "string",
-                    demandOption: true,
                 })
         },
         async (argv) => {
@@ -269,12 +276,6 @@ await y
                     type: "string",
                     default: "./output",
                 })
-                .option("cookie", {
-                    alias: "c",
-                    describe: "Google account cookie",
-                    type: "string",
-                    demandOption: true,
-                })
         },
         async (argv) => {
             const whisk = new Whisk(argv.cookie);
@@ -293,18 +294,61 @@ await y
         }
     )
     .command(
+        "upload <file>",
+        "Upload an image to be used as refernce later",
+        (yargs) => {
+            return yargs
+                .positional("file", {
+                    describe: "Path to local image file",
+                    type: "string",
+                    demandOption: true
+                })
+                .option("category", {
+                    alias: "ca",
+                    describe: "Category of reference",
+                    type: "string",
+                    demandOption: true,
+                    choices: Object.keys(MediaCategory)
+                })
+                .option("project", {
+                    alias: "pr",
+                    describe: "Project/Workflow ID",
+                    type: "string",
+                    demandOption: true
+                })
+        },
+        async (argv) => {
+            const whisk = new Whisk(argv.cookie);
+            await whisk.account.refresh();
+            console.log(whisk.account.toString());
+
+            console.log("[*] Generating caption for image...");
+
+            const base64 = await imageToBase64(argv.file);
+            // Split at the comma to get the raw base64 string
+            const rawBase64 = base64.split(",")[1];
+            const captionedImage = await Whisk.generateCaption(rawBase64, whisk.account);
+
+            console.log("[*] Uploading image...");
+
+            let mediaId = await Whisk.uploadImage(
+                rawBase64,
+                captionedImage[0],
+                MediaCategory[argv.category as keyof typeof MediaCategory],
+                argv.project,
+                whisk.account
+            );
+
+            console.log("[+] ID:", mediaId);
+        }
+    )
+    .command(
         "delete <mediaId>",
         "Delete a generated media from the cloud",
         (yargs) => {
             return yargs
                 .positional("mediaId", {
                     describe: "Unique ID of generated media to delete",
-                    type: "string",
-                    demandOption: true,
-                })
-                .option("cookie", {
-                    alias: "c",
-                    describe: "Google account cookie",
                     type: "string",
                     demandOption: true,
                 })
