@@ -16,11 +16,12 @@ bun i -g @rohitaryal/whisk-api
 ## Features
 
 1. Text to Image using `IMAGEN_3_5`
-2. Image to Video (Animation) using `VEO`
-3. Image Refinement (Editing/Inpainting using NanoBanana)
-4. Image to Text
+2. Image to Video (Animation) using `VEO_3_1`
+3. Image Refinement (Editing/Inpainting)
+4. Image to Text (Caption Generation)
 5. Project & Media Management
-6. Command line support
+6. Upload & Reference Images
+7. Command line support
 
 ## Usage
 
@@ -62,6 +63,12 @@ Make sure you have:
 > - PowerShell: `"$env:COOKIE"`
 > - Command Prompt: `"%COOKIE%"`
 
+- Creating a new project
+
+    ```bash
+    whisk project --name "My Project" --cookie "$COOKIE"
+    ```
+
 - Generating image with prompt
 
     ```bash
@@ -95,55 +102,164 @@ Make sure you have:
     whisk caption --file /path/to/img.webp --count 3 --cookie "$COOKIE"
     ```
 
+- Fetching an existing media by ID
+
+    ```bash
+    whisk fetch "__MEDIA__ID__HERE__" --cookie "$COOKIE"
+    ```
+
+- Uploading an image as reference
+
+    ```bash
+    whisk upload /path/to/image.jpg --category SUBJECT --project "__PROJECT__ID__" --cookie "$COOKIE"
+    ```
+
 - Deleting media from the cloud
 
     ```bash
     whisk delete "__MEDIA__ID__HERE__" --cookie "$COOKIE"
     ```
 
-Full generation help:
+Full CLI commands help:
 
 ```text
-whisk generate <options>
+whisk <cmd> [args]
+
+Commands:
+  whisk project             Generate a new project
+  whisk generate            Generate new images using a temporary project
+  whisk animate <mediaId>   Animate an existing landscape image into a video
+  whisk refine <mediaId>    Edit/Refine an existing image
+  whisk caption             Generate captions for a local image file
+  whisk fetch <mediaId>     Download an existing generated media by ID
+  whisk upload <file>       Upload an image to be used as reference later
+  whisk delete <mediaId>    Delete a generated media from the cloud
 
 Options:
-      --version     Show version number
-  -h, --help        Show help
-  -p, --prompt      Description of the image
-  -m, --model       Image generation model (Default: IMAGEN_3_5)
-  -a, --aspect      Aspect ratio (SQUARE, PORTRAIT, LANDSCAPE)
-  -s, --seed        Seed value (0 for random)
-  -d, --dir         Output directory
-  -c, --cookie      Google account cookie
+  -c, --cookie  Google account cookie [required]
+  -h, --help    Show help
+      --version Show version number
 ```
 
-Full animation help:
+<details>
+<summary>Project Command</summary>
+
+```text
+whisk project
+
+Options:
+  --name        Project name [default: "Whisk-CLI project"]
+  -c, --cookie  Google account cookie [required]
+```
+</details>
+
+<details>
+<summary>Generate Command</summary>
+
+```text
+whisk generate
+
+Options:
+  -p, --prompt   Description of the image [required]
+  -m, --model    Image generation model [default: "IMAGEN_3_5"]
+  -a, --aspect   Aspect ratio (SQUARE, PORTRAIT, LANDSCAPE) [default: "LANDSCAPE"]
+  -s, --seed     Seed value (0 for random) [default: 0]
+  -d, --dir      Output directory [default: "./output"]
+  -c, --cookie   Google account cookie [required]
+```
+</details>
+
+<details>
+<summary>Animate Command</summary>
 
 ```text
 whisk animate <mediaId>
 
 Positionals:
-  mediaId  The ID of the image to animate
+  mediaId  The ID of the image to animate [required]
 
 Options:
-  -s, --script    Prompt/Script for the video animation
-  -m, --model     Video generation model (Default: VEO_FAST_3_1)
-  -d, --dir       Output directory
-  -c, --cookie    Google account cookie
+  -s, --script   Prompt/Script for the video animation [required]
+  -m, --model    Video generation model [default: "VEO_3_1"]
+  -d, --dir      Output directory [default: "./output"]
+  -c, --cookie   Google account cookie [required]
 ```
+</details>
 
-Full fetch help:
+<details>
+<summary>Refine Command</summary>
+
+```text
+whisk refine <mediaId>
+
+Positionals:
+  mediaId  The ID of the image to refine [required]
+
+Options:
+  -p, --prompt   Instruction for editing (e.g., 'Make it snowy') [required]
+  -d, --dir      Output directory [default: "./output"]
+  -c, --cookie   Google account cookie [required]
+```
+</details>
+
+<details>
+<summary>Caption Command</summary>
+
+```text
+whisk caption
+
+Options:
+  -f, --file     Path to local image file [required]
+  -n, --count    Number of captions [default: 1]
+  -c, --cookie   Google account cookie [required]
+```
+</details>
+
+<details>
+<summary>Fetch Command</summary>
 
 ```text
 whisk fetch <mediaId>
 
 Positionals:
-  mediaId  Unique ID of generated media
+  mediaId  Unique ID of generated media [required]
 
 Options:
-  -d, --dir      Output directory
-  -c, --cookie   Google account cookie
+  -d, --dir      Output directory [default: "./output"]
+  -c, --cookie   Google account cookie [required]
 ```
+</details>
+
+<details>
+<summary>Upload Command</summary>
+
+```text
+whisk upload <file>
+
+Positionals:
+  file  Path to local image file [required]
+
+Options:
+  --category, -ca  Category of reference [required]
+                   Choices: SUBJECT, SCENE, STYLE
+  --project, -pr   Project/Workflow ID [required]
+  -c, --cookie     Google account cookie [required]
+```
+</details>
+
+<details>
+<summary>Delete Command</summary>
+
+```text
+whisk delete <mediaId>
+
+Positionals:
+  mediaId  Unique ID of generated media to delete [required]
+
+Options:
+  -c, --cookie   Google account cookie [required]
+```
+</details>
 
 </details>
 
@@ -186,7 +302,7 @@ Options:
     const refinedImage = await baseImage.refine("Make it raining neon rain");
 
     // 3. Animate (Video)
-    const video = await refinedImage.animate("Camera flies through the streets", "VEO_FAST_3_1");
+    const video = await refinedImage.animate("Camera flies through the streets", "VEO_3_1_I2V_12STEP");
 
     video.save("./videos");
     ```
