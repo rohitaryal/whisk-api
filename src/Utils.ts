@@ -1,5 +1,5 @@
 import fs from "fs";
-import type { ImageExtensionTypes } from "./Types.js";
+import type { ImageExtensionTypes, ImageInput } from "./Types.js";
 import path from "path";
 import { ImageExtension } from "./Constants.js";
 
@@ -41,31 +41,33 @@ export async function imageFromUrl(url: string): Promise<string> {
         throw new Error(`Failed to fetch image (${response.status}): ${url}`);
     }
 
-    const contentType = response.headers.get("content-type") || "image/png";
+    const contentType = response.headers.get("content-type") || "";
+    const imageType = contentType.split("/")[1]?.split(";")[0] as ImageExtensionTypes;
+
+    if (!Object.values(ImageExtension).includes(imageType)) {
+        throw new Error(`'${url}': unsupported image type '${contentType}'`);
+    }
+
     const buffer = Buffer.from(await response.arrayBuffer());
 
-    return `data:${contentType};base64,${buffer.toString("base64")}`;
+    return `data:image/${imageType};base64,${buffer.toString("base64")}`;
 }
 
-/**
- * Returns base64 encoded image
- *
- * @param imagePath Path to image file
- * @param imageType Extension of image (if that matters)
- */
-export async function imageToBase64(imagePath: string, imageType?: ImageExtensionTypes): Promise<string> {
+export async function resolveImageInput(input: ImageInput): Promise<string> {
+    if ("file" in input) return await imageToBase64(input.file);
+    if ("url" in input) return await imageFromUrl(input.url);
+    return input.base64;
+}
+
+export async function imageToBase64(imagePath: string): Promise<string> {
     if (!(imagePath?.trim?.()) || !fs.existsSync(imagePath)) {
         throw new Error(`'${imagePath}': image not found`);
     }
 
-    // Try to figure out image type from its extension
-    if (!(imageType?.trim?.())) {
-        imageType = path.extname(imagePath).slice(1) as ImageExtensionTypes;
-    }
+    const imageType = path.extname(imagePath).slice(1) as ImageExtensionTypes;
 
-    // If extension not in valid extension list throw error
     if (!Object.values(ImageExtension).includes(imageType)) {
-        throw new Error(`'${imagePath}': couldn't identify image type, please specify 'imageType'`)
+        throw new Error(`'${imagePath}': unsupported image type '${imageType}'`)
     }
 
     const base64Header = `data:image/${imageType};base64,`

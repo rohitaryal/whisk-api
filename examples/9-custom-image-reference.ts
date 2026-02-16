@@ -1,5 +1,4 @@
 import { Whisk } from "../src/Whisk";
-import { imageToBase64, imageFromUrl } from "../src/Utils";
 
 const whisk = new Whisk(process.env.COOKIE!);
 
@@ -8,19 +7,16 @@ async function main() {
 
     // let add 2 characters as subject (caption + upload handled automatically)
     console.log("Uploading local image as subject...")
-    const SubjectBase64 = await imageToBase64("./assets/patrick.png");
-    const Subject1Base64 = await imageToBase64("./assets/spongebob.png");
-    await project.addSubject(SubjectBase64)
-    await project.addSubject(Subject1Base64)
+    const patrick = await project.addSubject({ file: "./assets/patrick.png" })
+    console.log(patrick.mediaGenerationId, patrick.prompt);
+    await project.addSubject({ file: "./assets/spongebob.png" })
 
-    // can also use imageFromUrl
+    // can also use a URL directly
     console.log("Uploading URL image as scene...")
-    const SceneBase64 = await imageToBase64("./assets/gym-scene.jpg");
-    await project.addScene(SceneBase64)
+    await project.addScene({ file: "./assets/gym-scene.jpg" })
 
     console.log("Uploading URL image as style...")
-    const StyleBase64 = await imageToBase64("./assets/style-ghibli.jpg");
-    await project.addStyle(StyleBase64)
+    await project.addStyle({ file: "./assets/style-ghibli.jpg" })
 
     console.log("Generating final image with custom references...")
     const generatedImage = await project.generateImageWithReferences("working out in the gym")

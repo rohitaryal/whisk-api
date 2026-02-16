@@ -33,3 +33,8 @@ export interface MediaReference {
     prompt: string;
     mediaGenerationId: string;
 }
+
+export type ImageInput =
+    | { file: string }
+    | { url: string }
+    | { base64: string }

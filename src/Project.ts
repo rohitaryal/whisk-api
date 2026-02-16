@@ -1,7 +1,7 @@
 import { ImageGenerationModel, MediaCategory } from "./Constants.js";
 import { Media } from "./Media.js";
-import type { ImageGenerationModelType, MediaCategoryType, MediaReference, PromptConfig } from "./Types.js";
-import { request } from "./Utils.js";
+import type { ImageGenerationModelType, ImageInput, MediaCategoryType, MediaReference, PromptConfig } from "./Types.js";
+import { request, resolveImageInput } from "./Utils.js";
 import { Account, Whisk } from "./Whisk.js";
 
 export class Project {
@@ -30,31 +30,87 @@ export class Project {
     /**
      * Uploads a custom image and adds it as a subject reference
      *
-     * @param rawBytes Base64 encoded image (with or without data URI prefix)
+     * @param input Image as { file: string }, { url: string }, or { base64: string }
      */
-    async addSubject(rawBytes: string): Promise<void> {
-        await this.addReference(rawBytes, MediaCategory.SUBJECT, this.subjects);
+    async addSubject(input: ImageInput): Promise<MediaReference> {
+        return this.addReference(input, MediaCategory.SUBJECT, this.subjects);
     }
 
     /**
      * Uploads a custom image and adds it as a scene reference
      *
-     * @param rawBytes Base64 encoded image (with or without data URI prefix)
+     * @param input Image as { file: string }, { url: string }, or { base64: string }
      */
-    async addScene(rawBytes: string): Promise<void> {
-        await this.addReference(rawBytes, MediaCategory.SCENE, this.scenes);
+    async addScene(input: ImageInput): Promise<MediaReference> {
+        return this.addReference(input, MediaCategory.SCENE, this.scenes);
     }
 
     /**
      * Uploads a custom image and adds it as a style reference
      *
-     * @param rawBytes Base64 encoded image (with or without data URI prefix)
+     * @param input Image as { file: string }, { url: string }, or { base64: string }
      */
-    async addStyle(rawBytes: string): Promise<void> {
-        await this.addReference(rawBytes, MediaCategory.STYLE, this.styles);
+    async addStyle(input: ImageInput): Promise<MediaReference> {
+        return this.addReference(input, MediaCategory.STYLE, this.styles);
     }
 
-    private async addReference(rawBytes: string, category: MediaCategoryType, target: MediaReference[]): Promise<void> {
+    addSubjectById(mediaGenerationId: string, prompt: string): void {
+        this.addById(mediaGenerationId, prompt, this.subjects);
+    }
+
+    addSceneById(mediaGenerationId: string, prompt: string): void {
+        this.addById(mediaGenerationId, prompt, this.scenes);
+    }
+
+    addStyleById(mediaGenerationId: string, prompt: string): void {
+        this.addById(mediaGenerationId, prompt, this.styles);
+    }
+
+    removeSubject(mediaGenerationId: string): MediaReference {
+        return this.removeById(mediaGenerationId, this.subjects);
+    }
+
+    removeScene(mediaGenerationId: string): MediaReference {
+        return this.removeById(mediaGenerationId, this.scenes);
+    }
+
+    removeStyle(mediaGenerationId: string): MediaReference {
+        return this.removeById(mediaGenerationId, this.styles);
+    }
+
+    private addById(mediaGenerationId: string, prompt: string, target: MediaReference[]): void {
+        if (typeof mediaGenerationId !== "string" || !mediaGenerationId.trim()) {
+            throw new Error("media generation id is required")
+        }
+
+        if (typeof prompt !== "string" || !prompt.trim()) {
+            throw new Error("prompt is required")
+        }
+
+        if (target.some(ref => ref.mediaGenerationId === mediaGenerationId)) {
+            throw new Error(`'${mediaGenerationId}': reference already exists`)
+        }
+
+        target.push({ prompt, mediaGenerationId });
+    }
+
+    private removeById(mediaGenerationId: string, target: MediaReference[]): MediaReference {
+        if (typeof mediaGenerationId !== "string" || !mediaGenerationId.trim()) {
+            throw new Error("media generation id is required")
+        }
+
+        const index = target.findIndex(ref => ref.mediaGenerationId === mediaGenerationId);
+
+        if (index === -1) {
+            throw new Error(`'${mediaGenerationId}': reference not found`)
+        }
+
+        return target.splice(index, 1)[0];
+    }
+
+    private async addReference(input: ImageInput, category: MediaCategoryType, target: MediaReference[]): Promise<MediaReference> {
+        const rawBytes = await resolveImageInput(input);
+
         if (!(rawBytes?.trim?.())) {
             throw new Error("image data is required")
         }
@@ -86,7 +142,9 @@ export class Project {
             rawBytes, caption, category, this.projectId, this.account
         );
 
-        target.push({ prompt: caption, mediaGenerationId: uploadMediaGenerationId });
+        const ref: MediaReference = { prompt: caption, mediaGenerationId: uploadMediaGenerationId };
+        target.push(ref);
+        return ref;
     }
 
     async generateImage(input: string | PromptConfig): Promise<Media> {
